@@ -1,0 +1,1038 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+   "contentVersion": "1.0.0.0",
+   "parameters": {
+
+	 "CuentaAlmacenamiento": {
+      "type": "string",
+	  "defaultValue": "almacenajeus",
+      "metadata": {
+        "description": "Nombre de la cuenta de almacenamiento"
+      }
+  },
+	"GrupoRecursosExistente": {
+      "type": "string",
+	  "defaultValue": "Grupo1",
+      "metadata": {
+        "description": "Nombre del grupo de recursos en donde se encuentre la red"
+      }
+  }
+
+  },
+    "variables": {
+    "api-version": "2015-06-15",
+    "publicIPAddressType": "Dynamic",
+    "vnetID": "[resourceId(parameters('GrupoRecursosExistente'), 'Microsoft.Network/virtualNetworks', variables('existingVirtualNetworkName'))]",
+    "subnetRef": "[concat(variables('vnetID'),'/subnets/', variables('subnetName'))]",
+	"location": "East US 2",
+	"osType": "Windows",
+	"vmSize": "Basic_A0",
+	"existingVirtualNetworkName": "red",
+    "subnetName": "Subred",
+    "NombreImagen": "Server2008"
+
+  },
+   "resources": [
+    {
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "red",
+      "location": "[variables('location')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "192.168.0.0/16"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "Subred",
+            "properties": {
+              "addressPrefix": "192.168.1.100/27"
+            }
+          }
+        ]
+      }
+    },
+
+	{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "IPPublica-VM1",
+      "location": "[variables('location')]",
+      "tags": {
+        "displayName": "IPPublica1"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
+        "dnsSettings": {
+          "domainNameLabel": "[concat('vm1-',parameters('CuentaAlmacenamiento'))]"
+        }
+      }
+    },
+	
+	{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "VM1-NIC",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/','IPPublica-VM1')]"
+        ],
+       "tags": {
+        "displayName": "InterfazDeRed1"     
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses','IPPublica-VM1')]"
+              },
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+	
+	{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "VM1",
+      "location": "[variables('location')]",
+      "tags": {
+        "displayName": "Maquina1"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/','VM1-NIC')]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('vmSize')]"
+        },
+		        "osProfile": {
+          "computerName": "VM1",
+          "adminUsername": "administrador",
+          "adminPassword": "radeon404_"
+        },
+        "storageProfile": {
+          "osDisk": {
+            "name": "VM1",
+            "osType": "[variables('osType')]",
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "image": {
+              "uri": "[concat('https://',parameters('CuentaAlmacenamiento'),'.blob.core.windows.net/vhds/',variables('NombreImagen'),'.vhd')]"
+            },
+            "vhd": {
+              "uri": "[concat('https://',parameters('CuentaAlmacenamiento'),'.blob.core.windows.net/vhds/VM1.vhd')]"
+            }
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces','VM1-NIC')]"
+            }
+          ]
+        }
+      }
+    },
+	
+	{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "IPPublica-VM2",
+      "location": "[variables('location')]",
+      "tags": {
+        "displayName": "IPPublica2"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
+        "dnsSettings": {
+          "domainNameLabel": "[concat('vm2-',parameters('CuentaAlmacenamiento'))]"
+        }
+      }
+    },
+	
+	{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "VM2-NIC",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/','IPPublica-VM2')]"
+        ],
+       "tags": {
+        "displayName": "InterfazDeRed2"     
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig2",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses','IPPublica-VM2')]"
+              },
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+	
+	{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "VM2",
+      "location": "[variables('location')]",
+      "tags": {
+        "displayName": "Maquina2"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/','VM2-NIC')]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('vmSize')]"
+        },
+		        "osProfile": {
+          "computerName": "VM2",
+          "adminUsername": "administrador",
+          "adminPassword": "radeon404_"
+        },
+        "storageProfile": {
+          "osDisk": {
+            "name": "VM2",
+            "osType": "[variables('osType')]",
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "image": {
+              "uri": "[concat('https://',parameters('CuentaAlmacenamiento'),'.blob.core.windows.net/vhds/',variables('NombreImagen'),'.vhd')]"
+            },
+            "vhd": {
+              "uri": "[concat('https://',parameters('CuentaAlmacenamiento'),'.blob.core.windows.net/vhds/VM2.vhd')]"
+            }
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces','VM2-NIC')]"
+            }
+          ]
+        }
+      }
+    },
+	
+		{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "IPPublica-VM3",
+      "location": "[variables('location')]",
+      "tags": {
+        "displayName": "IPPublica3"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
+        "dnsSettings": {
+          "domainNameLabel": "[concat('vm3-',parameters('CuentaAlmacenamiento'))]"
+        }
+      }
+    },
+	
+	{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "VM3-NIC",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/','IPPublica-VM3')]"
+        ],
+       "tags": {
+        "displayName": "InterfazDeRed3"     
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig3",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses','IPPublica-VM3')]"
+              },
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+	
+	{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "VM3",
+      "location": "[variables('location')]",
+      "tags": {
+        "displayName": "Maquina3"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/','VM3-NIC')]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('vmSize')]"
+        },
+		        "osProfile": {
+          "computerName": "VM3",
+          "adminUsername": "administrador",
+          "adminPassword": "radeon404_"
+        },
+        "storageProfile": {
+          "osDisk": {
+            "name": "VM3",
+            "osType": "[variables('osType')]",
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "image": {
+              "uri": "[concat('https://',parameters('CuentaAlmacenamiento'),'.blob.core.windows.net/vhds/',variables('NombreImagen'),'.vhd')]"
+            },
+            "vhd": {
+              "uri": "[concat('https://',parameters('CuentaAlmacenamiento'),'.blob.core.windows.net/vhds/VM3.vhd')]"
+            }
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces','VM3-NIC')]"
+            }
+          ]
+        }
+      }
+    },
+	
+		{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "IPPublica-VM4",
+      "location": "[variables('location')]",
+      "tags": {
+        "displayName": "IPPublica4"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
+        "dnsSettings": {
+          "domainNameLabel": "[concat('vm4-',parameters('CuentaAlmacenamiento'))]"
+        }
+      }
+    },
+	
+	{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "VM4-NIC",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/','IPPublica-VM4')]"
+        ],
+       "tags": {
+        "displayName": "InterfazDeRed4"     
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig4",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses','IPPublica-VM4')]"
+              },
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+	
+	{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "VM4",
+      "location": "[variables('location')]",
+      "tags": {
+        "displayName": "Maquina4"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/','VM4-NIC')]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('vmSize')]"
+        },
+		        "osProfile": {
+          "computerName": "VM4",
+          "adminUsername": "administrador",
+          "adminPassword": "radeon404_"
+        },
+        "storageProfile": {
+          "osDisk": {
+            "name": "VM4",
+            "osType": "[variables('osType')]",
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "image": {
+              "uri": "[concat('https://',parameters('CuentaAlmacenamiento'),'.blob.core.windows.net/vhds/',variables('NombreImagen'),'.vhd')]"
+            },
+            "vhd": {
+              "uri": "[concat('https://',parameters('CuentaAlmacenamiento'),'.blob.core.windows.net/vhds/VM4.vhd')]"
+            }
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces','VM4-NIC')]"
+            }
+          ]
+        }
+      }
+    },
+	
+		{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "IPPublica-VM5",
+      "location": "[variables('location')]",
+      "tags": {
+        "displayName": "IPPublica5"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
+        "dnsSettings": {
+          "domainNameLabel": "[concat('vm5-',parameters('CuentaAlmacenamiento'))]"
+        }
+      }
+    },
+	
+	{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "VM5-NIC",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/','IPPublica-VM5')]"
+        ],
+       "tags": {
+        "displayName": "InterfazDeRed5"     
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig5",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses','IPPublica-VM5')]"
+              },
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+	
+	{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "VM5",
+      "location": "[variables('location')]",
+      "tags": {
+        "displayName": "Maquina5"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/','VM5-NIC')]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('vmSize')]"
+        },
+		        "osProfile": {
+          "computerName": "VM5",
+          "adminUsername": "administrador",
+          "adminPassword": "radeon404_"
+        },
+        "storageProfile": {
+          "osDisk": {
+            "name": "VM5",
+            "osType": "[variables('osType')]",
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "image": {
+              "uri": "[concat('https://',parameters('CuentaAlmacenamiento'),'.blob.core.windows.net/vhds/',variables('NombreImagen'),'.vhd')]"
+            },
+            "vhd": {
+              "uri": "[concat('https://',parameters('CuentaAlmacenamiento'),'.blob.core.windows.net/vhds/VM5.vhd')]"
+            }
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces','VM5-NIC')]"
+            }
+          ]
+        }
+      }
+    },
+	
+		{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "IPPublica-VM6",
+      "location": "[variables('location')]",
+      "tags": {
+        "displayName": "IPPublica6"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
+        "dnsSettings": {
+          "domainNameLabel": "[concat('vm6-',parameters('CuentaAlmacenamiento'))]"
+        }
+      }
+    },
+	
+	{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "VM6-NIC",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/','IPPublica-VM6')]"
+        ],
+       "tags": {
+        "displayName": "InterfazDeRed6"     
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig6",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses','IPPublica-VM6')]"
+              },
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+	
+	{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "VM6",
+      "location": "[variables('location')]",
+      "tags": {
+        "displayName": "Maquina6"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/','VM6-NIC')]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('vmSize')]"
+        },
+		        "osProfile": {
+          "computerName": "VM6",
+          "adminUsername": "administrador",
+          "adminPassword": "radeon404_"
+        },
+        "storageProfile": {
+          "osDisk": {
+            "name": "VM6",
+            "osType": "[variables('osType')]",
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "image": {
+              "uri": "[concat('https://',parameters('CuentaAlmacenamiento'),'.blob.core.windows.net/vhds/',variables('NombreImagen'),'.vhd')]"
+            },
+            "vhd": {
+              "uri": "[concat('https://',parameters('CuentaAlmacenamiento'),'.blob.core.windows.net/vhds/VM6.vhd')]"
+            }
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces','VM6-NIC')]"
+            }
+          ]
+        }
+      }
+    },
+	
+		{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "IPPublica-VM7",
+      "location": "[variables('location')]",
+      "tags": {
+        "displayName": "IPPublica7"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
+        "dnsSettings": {
+          "domainNameLabel": "[concat('vm7-',parameters('CuentaAlmacenamiento'))]"
+        }
+      }
+    },
+	
+	{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "VM7-NIC",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/','IPPublica-VM7')]"
+        ],
+       "tags": {
+        "displayName": "InterfazDeRed7"     
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig7",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses','IPPublica-VM7')]"
+              },
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+	
+	{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "VM7",
+      "location": "[variables('location')]",
+      "tags": {
+        "displayName": "Maquina7"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/','VM7-NIC')]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('vmSize')]"
+        },
+		        "osProfile": {
+          "computerName": "VM7",
+          "adminUsername": "administrador",
+          "adminPassword": "radeon404_"
+        },
+        "storageProfile": {
+          "osDisk": {
+            "name": "VM7",
+            "osType": "[variables('osType')]",
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "image": {
+              "uri": "[concat('https://',parameters('CuentaAlmacenamiento'),'.blob.core.windows.net/vhds/',variables('NombreImagen'),'.vhd')]"
+            },
+            "vhd": {
+              "uri": "[concat('https://',parameters('CuentaAlmacenamiento'),'.blob.core.windows.net/vhds/VM7.vhd')]"
+            }
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces','VM7-NIC')]"
+            }
+          ]
+        }
+      }
+    },
+	
+		{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "IPPublica-VM8",
+      "location": "[variables('location')]",
+      "tags": {
+        "displayName": "IPPublica8"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
+        "dnsSettings": {
+          "domainNameLabel": "[concat('vm8-',parameters('CuentaAlmacenamiento'))]"
+        }
+      }
+    },
+	
+	{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "VM8-NIC",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/','IPPublica-VM8')]"
+        ],
+       "tags": {
+        "displayName": "InterfazDeRed8"     
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig8",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses','IPPublica-VM8')]"
+              },
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+	
+	{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "VM8",
+      "location": "[variables('location')]",
+      "tags": {
+        "displayName": "Maquina8"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/','VM8-NIC')]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('vmSize')]"
+        },
+		        "osProfile": {
+          "computerName": "VM8",
+          "adminUsername": "administrador",
+          "adminPassword": "radeon404_"
+        },
+        "storageProfile": {
+          "osDisk": {
+            "name": "VM8",
+            "osType": "[variables('osType')]",
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "image": {
+              "uri": "[concat('https://',parameters('CuentaAlmacenamiento'),'.blob.core.windows.net/vhds/',variables('NombreImagen'),'.vhd')]"
+            },
+            "vhd": {
+              "uri": "[concat('https://',parameters('CuentaAlmacenamiento'),'.blob.core.windows.net/vhds/VM8.vhd')]"
+            }
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces','VM8-NIC')]"
+            }
+          ]
+        }
+      }
+    },
+	
+		{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "IPPublica-VM9",
+      "location": "[variables('location')]",
+      "tags": {
+        "displayName": "IPPublica9"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
+        "dnsSettings": {
+          "domainNameLabel": "[concat('vm9-',parameters('CuentaAlmacenamiento'))]"
+        }
+      }
+    },
+	
+	{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "VM9-NIC",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/','IPPublica-VM9')]"
+        ],
+       "tags": {
+        "displayName": "InterfazDeRed9"     
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig9",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses','IPPublica-VM9')]"
+              },
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+	
+	{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "VM9",
+      "location": "[variables('location')]",
+      "tags": {
+        "displayName": "Maquina9"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/','VM9-NIC')]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('vmSize')]"
+        },
+		        "osProfile": {
+          "computerName": "VM9",
+          "adminUsername": "administrador",
+          "adminPassword": "radeon404_"
+        },
+        "storageProfile": {
+          "osDisk": {
+            "name": "VM9",
+            "osType": "[variables('osType')]",
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "image": {
+              "uri": "[concat('https://',parameters('CuentaAlmacenamiento'),'.blob.core.windows.net/vhds/',variables('NombreImagen'),'.vhd')]"
+            },
+            "vhd": {
+              "uri": "[concat('https://',parameters('CuentaAlmacenamiento'),'.blob.core.windows.net/vhds/VM9.vhd')]"
+            }
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces','VM9-NIC')]"
+            }
+          ]
+        }
+      }
+    },
+	
+		{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "IPPublica-VM10",
+      "location": "[variables('location')]",
+      "tags": {
+        "displayName": "IPPublica10"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
+        "dnsSettings": {
+          "domainNameLabel": "[concat('vm10-',parameters('CuentaAlmacenamiento'))]"
+        }
+      }
+    },
+	
+	{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "VM10-NIC",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/','IPPublica-VM10')]"
+        ],
+       "tags": {
+        "displayName": "InterfazDeRed10"     
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig10",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses','IPPublica-VM10')]"
+              },
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+	
+	{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "VM10",
+      "location": "[variables('location')]",
+      "tags": {
+        "displayName": "Maquina10"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/','VM10-NIC')]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('vmSize')]"
+        },
+		        "osProfile": {
+          "computerName": "VM10",
+          "adminUsername": "administrador",
+          "adminPassword": "radeon404_"
+        },
+        "storageProfile": {
+          "osDisk": {
+            "name": "VM10",
+            "osType": "[variables('osType')]",
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "image": {
+              "uri": "[concat('https://',parameters('CuentaAlmacenamiento'),'.blob.core.windows.net/vhds/',variables('NombreImagen'),'.vhd')]"
+            },
+            "vhd": {
+              "uri": "[concat('https://',parameters('CuentaAlmacenamiento'),'.blob.core.windows.net/vhds/VM10.vhd')]"
+            }
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces','VM10-NIC')]"
+            }
+          ]
+        }
+      }
+    },
+	
+		{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "IPPublica-VM11",
+      "location": "[variables('location')]",
+      "tags": {
+        "displayName": "IPPublica11"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
+        "dnsSettings": {
+          "domainNameLabel": "[concat('vm11-',parameters('CuentaAlmacenamiento'))]"
+        }
+      }
+    },
+	
+	{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "VM11-NIC",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/','IPPublica-VM11')]"
+        ],
+       "tags": {
+        "displayName": "InterfazDeRed11"     
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig11",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses','IPPublica-VM11')]"
+              },
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+	
+	{
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "VM11",
+      "location": "[variables('location')]",
+      "tags": {
+        "displayName": "Maquina11"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/','VM11-NIC')]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('vmSize')]"
+        },
+		        "osProfile": {
+          "computerName": "VM11",
+          "adminUsername": "administrador",
+          "adminPassword": "radeon404_"
+        },
+        "storageProfile": {
+          "osDisk": {
+            "name": "VM11",
+            "osType": "[variables('osType')]",
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "image": {
+              "uri": "[concat('https://',parameters('CuentaAlmacenamiento'),'.blob.core.windows.net/vhds/',variables('NombreImagen'),'.vhd')]"
+            },
+            "vhd": {
+              "uri": "[concat('https://',parameters('CuentaAlmacenamiento'),'.blob.core.windows.net/vhds/VM11.vhd')]"
+            }
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces','VM11-NIC')]"
+            }
+          ]
+        }
+      }
+    }
+	
+  ]
+}
